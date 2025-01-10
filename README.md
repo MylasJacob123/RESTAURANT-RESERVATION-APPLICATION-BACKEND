@@ -2,13 +2,14 @@
 
 **Restaurant Management and Reservation System**
 
-This project is a Restaurant Management and Reservation System built with Node.js, Express.js, and MongoDB. It provides RESTful APIs for user authentication, restaurant management, and reservation handling. It uses JWT (JSON Web Token) for authentication and express-validator for input validation.
+This project is a Restaurant Management and Reservation System built with Node.js, Express.js, and MongoDB. It provides RESTful APIs for user authentication, restaurant management, and reservation handling. It uses JWT (JSON Web Token) for authentication and express-validator for input validation. It also integrates PayPal for handling payments.
 
 **Features**
 
 -- User Authentication: Register, login, reset password, and update user profiles.
 -- Restaurant Management: Add, update, and delete restaurant details (admin role required).
 -- Reservation Management: Make, update, and delete reservations.
+-- Payment Integration: Process payments using PayPal.
 -- Role-Based Access Control: Ensures only authorized users can manage restaurants and reservations.
 
 **Prerequisites**
@@ -17,6 +18,7 @@ To set up and run this backend server, ensure you have the following installed:
 Node.js 
 MongoDB
 Postman or any API client (For testing the APIs)
+PayPal Developer Account (For integration)
 
 **Installation**
 
@@ -37,6 +39,9 @@ EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=your-email-port
 EMAIL_USER=your-email-address
 EMAIL_PASS=given-email-security-password
+PAYPAL_MODE=sandbox_or_live
+PAYPAL_CLIENT_ID=your_paypal_client_id
+PAYPAL_CLIENT_SECRET=your_paypal_client_secret
 
 
 **API Documentation**
@@ -67,6 +72,12 @@ EMAIL_PASS=given-email-security-password
 ---- **DELETE /api/delete-reservation/:id**: Delete a reservation (requires authentication).
 
 
+4. **Payment Integration**
+
+---- **POST /api/create-payment**: Creates a payment request with PayPal.
+---- **POST /api/capture-payment/:orderId**: Captures the payment once the user approves the payment.
+
+
 **Error Handling**
 
 API responses include meaningful error messages for debugging. Example:
@@ -87,12 +98,11 @@ Use Postman to test the endpoints.For authenticated endpoints, include the JWT t
 Authorization: Bearer <jwt_token>
 
 restaurant-reservation-system/
-├──config/              # Contains mongoDB connection logic
+├──config/              # Contains mongoDB and PayPal connection logic
 ├── controllers/        # Contains route logic
 ├── middleware/         # Middleware for authentication and validation
 ├── models/             # MongoDB schemas and models
 ├── routes/             # API routes
-├── utils/              # Utility functions
 ├── .env                # Environment variables
 ├── server.js           # Entry point for the server
 └── package.json   
@@ -101,3 +111,6 @@ restaurant-reservation-system/
 **Contributors**
 
 Jacob Mylas (GitHub)
+
+
+This README provides a full breakdown of the project structure, installation instructions, API documentation, and details about integrating PayPal into the system.
