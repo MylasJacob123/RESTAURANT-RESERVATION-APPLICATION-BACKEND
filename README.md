@@ -113,4 +113,4 @@ restaurant-reservation-system/
 Jacob Mylas (GitHub)
 
 
-This README provides a full breakdown of the project structure, installation instructions, API documentation, and details about integrating PayPal into the system.
+This README provides a full breakdown of the project structure, installation instructions, API documentation, and details about integrating PayPal into the system. 

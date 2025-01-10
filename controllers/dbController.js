@@ -3,6 +3,8 @@ const reservation = require("../models/reservation");
 const paypal = require("@paypal/checkout-server-sdk");
 const { client } = require("../config/paypal");
 const Payment = require("../models/paypalPayment");
+const Review = require('../models/review');
+const Restaurant = require("../models/restaurant");
 
 //////////////////////// RESTAURANT FUNCTIONS ////////////////////////
 
@@ -334,6 +336,57 @@ const capturePayment = async (req, res) => {
   }
 };
 
+//////////////////////// REVIEW FUNCTIONS ////////////////////////
+
+const getReviews = async (req, res) => {
+  const { restaurantId } = req.params;  
+
+  try {
+    const reviews = await Review.find({ restaurant: restaurantId })
+      .populate("user", "name")  
+      .sort({ createdAt: -1 });  
+
+    if (!reviews || reviews.length === 0) {
+      return res.status(404).json({ msg: "No reviews found for this restaurant." });
+    }
+
+    res.status(200).json(reviews);
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ msg: "Server error", error: error.message });
+  }
+};
+
+const addReview = async (req, res) => {
+  const { restaurantId, rating, comment } = req.body;
+  const userId = req.user.id;
+
+  try {
+    const restaurant = await Restaurant.findById(restaurantId);
+    if (!restaurant) {
+      return res.status(404).json({ msg: "Restaurant not found" });
+    }
+
+    const existingReview = await Review.findOne({ user: userId, restaurant: restaurantId });
+    if (existingReview) {
+      return res.status(400).json({ msg: "You have already left a review for this restaurant" });
+    }
+
+    const newReview = new Review({
+      user: userId,
+      restaurant: restaurantId,
+      rating,
+      comment,
+    });
+
+    await newReview.save();
+
+    res.status(201).json(newReview);
+  } catch (error) {
+    res.status(500).json({ msg: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   getRestaurants,
   addRestaurant,
@@ -345,4 +398,6 @@ module.exports = {
   deleteReservation,
   createPayment,
   capturePayment,
+  getReviews,
+  addReview,
 };
