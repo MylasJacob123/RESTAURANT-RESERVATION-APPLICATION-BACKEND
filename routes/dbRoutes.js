@@ -8,6 +8,8 @@ const {
   addReservation,
   updateReservation,
   deleteReservation,
+  createPayment,
+  capturePayment
 } = require("../controllers/dbController");
 const { protect } = require("../middleware/authMiddleware");
 const { adminOnly } = require("../middleware/roleMiddleware");
@@ -43,5 +45,9 @@ router.post(
 );
 router.put("/update-reservation/:id", protect, updateReservation);
 router.delete("/delete-reservation/:id", protect, deleteReservation);
+
+// PAYMENT ROUTES
+router.post("/create-payment", protect, createPayment);
+router.post("/capture-payment/:orderId", protect, capturePayment);
 
 module.exports = router;

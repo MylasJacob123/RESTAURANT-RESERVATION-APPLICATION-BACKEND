@@ -1,5 +1,8 @@
 const restaurant = require("../models/restaurant");
 const reservation = require("../models/reservation");
+const paypal = require("@paypal/checkout-server-sdk");
+const { client } = require("../config/paypal");
+const Payment = require("../models/paypalPayment");
 
 //////////////////////// RESTAURANT FUNCTIONS ////////////////////////
 
@@ -158,7 +161,8 @@ const addReservation = async (req, res) => {
 
     if (existingReservation) {
       return res.status(400).json({
-        error: "A reservation already exists for this user, restaurant, and date.",
+        error:
+          "A reservation already exists for this user, restaurant, and date.",
       });
     }
 
@@ -191,11 +195,9 @@ const updateReservation = async (req, res) => {
     const reservationToUpdate = await reservation.findById(id);
     if (!reservationToUpdate) {
       // console.log("Reservation not found with ID:", id);
-      return res
-        .status(404)
-        .json({
-          error: "Reservation not found. Invalid reservation ID provided.",
-        });
+      return res.status(404).json({
+        error: "Reservation not found. Invalid reservation ID provided.",
+      });
     }
     // console.log("Reservation found:", reservationToUpdate);
 
@@ -254,10 +256,81 @@ const deleteReservation = async (req, res) => {
     // console.log("Reservation deleted successfully:", deletedReservation);
     res
       .status(200)
-      .json({ message: "Reservation deleted successfully", deletedReservation });
+      .json({
+        message: "Reservation deleted successfully",
+        deletedReservation,
+      });
   } catch (error) {
     // console.error("Error deleting reservation:", error.message);
     res.status(500).json({ error: error.message });
+  }
+};
+
+//////////////////////// PAYPAL FUNCTIONS ////////////////////////
+
+const createPayment = async (req, res) => {
+  const { amount, description, userId, reservationId } = req.body;
+
+  const request = new paypal.orders.OrdersCreateRequest();
+  request.prefer("return=representation");
+  request.requestBody({
+    intent: "CAPTURE",
+    purchase_units: [
+      {
+        amount: {
+          currency_code: "USD",
+          value: amount,
+        },
+        description: description,
+      },
+    ],
+  });
+
+  try {
+    const order = await client.execute(request);
+
+    // Store payment details in the database
+    const newPayment = new Payment({
+      orderId: order.result.id,
+      user: userId,
+      reservation: reservationId,
+      amount,
+      status: "CREATED",
+      description,
+    });
+    await newPayment.save();
+
+    const approvalLink = order.result.links.find(
+      (link) => link.rel === "approve"
+    ).href;
+    res.status(201).json({ approvalLink });
+  } catch (error) {
+    console.error("Error creating payment:", error.message);
+    res.status(500).json({ error: "Payment creation failed" });
+  }
+};
+
+const capturePayment = async (req, res) => {
+  const { orderId } = req.params;
+
+  const request = new paypal.orders.OrdersCaptureRequest(orderId);
+  request.requestBody({});
+
+  try {
+    const capture = await client.execute(request);
+
+    // Update payment status in the database
+    const payment = await Payment.findOne({ orderId });
+    if (payment) {
+      payment.status = "CAPTURED";
+      payment.captureDetails = capture.result;
+      await payment.save();
+    }
+
+    res.status(200).json(capture.result);
+  } catch (error) {
+    console.error("Error capturing payment:", error.message);
+    res.status(500).json({ error: "Payment capture failed" });
   }
 };
 
@@ -269,5 +342,7 @@ module.exports = {
   getReservations,
   addReservation,
   updateReservation,
-  deleteReservation
+  deleteReservation,
+  createPayment,
+  capturePayment,
 };
