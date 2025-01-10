@@ -11,6 +11,7 @@ This project is a Restaurant Management and Reservation System built with Node.j
 -- Reservation Management: Make, update, and delete reservations.
 -- Payment Integration: Process payments using PayPal.
 -- Role-Based Access Control: Ensures only authorized users can manage restaurants and reservations.
+-- Review System: Users can add and view reviews for restaurants.
 
 **Prerequisites**
 To set up and run this backend server, ensure you have the following installed:
@@ -78,6 +79,11 @@ PAYPAL_CLIENT_SECRET=your_paypal_client_secret
 ---- **POST /api/capture-payment/:orderId**: Captures the payment once the user approves the payment.
 
 
+4. **Review Endpoints**
+
+---- **GET /api/get-reviews/:restaurantId**: Retrieve all reviews for a specific restaurant.
+---- **POST /api/add-review**: Add a review for a restaurant (requires authentication).
+
 **Error Handling**
 
 API responses include meaningful error messages for debugging. Example:
@@ -97,7 +103,7 @@ Use Postman to test the endpoints.For authenticated endpoints, include the JWT t
 
 Authorization: Bearer <jwt_token>
 
-restaurant-reservation-system/
+restaurant-reservation-application-backend/
 ├──config/              # Contains mongoDB and PayPal connection logic
 ├── controllers/        # Contains route logic
 ├── middleware/         # Middleware for authentication and validation
