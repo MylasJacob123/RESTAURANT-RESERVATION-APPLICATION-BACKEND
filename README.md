@@ -12,6 +12,7 @@ This project is a Restaurant Management and Reservation System built with Node.j
 -- Payment Integration: Process payments using PayPal.
 -- Role-Based Access Control: Ensures only authorized users can manage restaurants and reservations.
 -- Review System: Users can add and view reviews for restaurants.
+-- File Uploads (Multer): Handle image uploads for restaurants.
 
 **Prerequisites**
 To set up and run this backend server, ensure you have the following installed:
@@ -20,6 +21,7 @@ Node.js
 MongoDB
 Postman or any API client (For testing the APIs)
 PayPal Developer Account (For integration)
+Multer for handling file uploads (for restaurant images or user profile pictures)
 
 **Installation**
 
