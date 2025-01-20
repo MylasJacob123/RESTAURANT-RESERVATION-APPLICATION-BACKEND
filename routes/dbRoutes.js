@@ -3,6 +3,7 @@ const {
   getRestaurants,
   addRestaurant,
   updateRestaurant,
+  checkAvailableSlots,
   deleteRestaurant,
   getReservations,
   addReservation,
@@ -11,7 +12,7 @@ const {
   createPayment,
   capturePayment,
   getReviews,
-  addReview
+  addReview,
 } = require("../controllers/dbController");
 const { protect } = require("../middleware/authMiddleware");
 const { adminOnly } = require("../middleware/roleMiddleware");
@@ -21,9 +22,8 @@ const {
   validateReservation,
   handleReservationValidationErrors,
 } = require("../middleware/dbMiddleware");
+const upload = require("../middleware/upload");
 const router = express.Router();
-
-
 
 // RESTAURANT ROUTES
 router.get("/get-restaurants", getRestaurants);
@@ -31,14 +31,20 @@ router.post(
   "/add-restaurant",
   protect,
   adminOnly,
+  upload.single("image"),
   validateRestaurant,
   handleRestaurantValidationErrors,
   addRestaurant
 );
-router.put("/update-restaurant/:id", protect, adminOnly, updateRestaurant);
+router.put(
+  "/update-restaurant/:id",
+  protect,
+  adminOnly,
+  upload.single("image"),
+  updateRestaurant
+);
+router.get("/restaurants/:restaurantId/slots/:date", checkAvailableSlots);
 router.delete("/delete-restaurant/:id", protect, adminOnly, deleteRestaurant);
-
-
 
 // RESERVATION ROUTES
 router.get("/get-reservations", getReservations);
@@ -52,13 +58,9 @@ router.post(
 router.put("/update-reservation/:id", protect, updateReservation);
 router.delete("/delete-reservation/:id", protect, deleteReservation);
 
-
-
 // PAYMENT ROUTES
 router.post("/create-payment", protect, createPayment);
 router.post("/capture-payment/:orderId", protect, capturePayment);
-
-
 
 //REVIEW ROUTES
 router.get("/get-reviews/:restaurantId", getReviews);

@@ -24,6 +24,7 @@ const addRestaurant = async (req, res) => {
   try {
     const { name, location, cuisine, description, reservationSlots, admin } =
       req.body;
+    const image = req.file ? req.file.path : null;
 
     // console.log("Received data to add restaurant:", req.body);
 
@@ -40,6 +41,7 @@ const addRestaurant = async (req, res) => {
       cuisine,
       description,
       reservationSlots,
+      image,
       admin,
     });
 
@@ -59,6 +61,7 @@ const updateRestaurant = async (req, res) => {
     const { id } = req.params;
     const { name, location, cuisine, description, reservationSlots, admin } =
       req.body;
+    const image = req.file ? req.file.path : null;
 
     // console.log("Request to update restaurant with ID:", id);
     // console.log("Update data:", req.body);
@@ -75,6 +78,7 @@ const updateRestaurant = async (req, res) => {
     if (description) restaurantToUpdate.description = description;
     if (reservationSlots)
       restaurantToUpdate.reservationSlots = reservationSlots;
+    if (image) restaurantToUpdate.image = image;  
     if (admin) restaurantToUpdate.admin = admin;
 
     // console.log("Updated restaurant object before saving:", restaurantToUpdate);
@@ -155,18 +159,29 @@ const addReservation = async (req, res) => {
     }
 
     // Check if a reservation already exists for the same user, restaurant, and date
-    const existingReservation = await reservation.findOne({
-      user,
-      restaurant: restaurantId,
-      date,
-    });
+    // const existingReservation = await reservation.findOne({
+    //   user,
+    //   restaurant: restaurantId,
+    //   date,
+    // });
 
-    if (existingReservation) {
-      return res.status(400).json({
-        error:
-          "A reservation already exists for this user, restaurant, and date.",
-      });
+    // if (existingReservation) {
+    //   return res.status(400).json({
+    //     error:
+    //       "A reservation already exists for this user, restaurant, and date.",
+    //   });
+    // }
+
+    const slot = foundRestaurant.reservationSlots.find(
+      (slot) => slot.date.toISOString() === new Date(date).toISOString() && slot.slots > 0
+    );
+
+    if (!slot) {
+      return res.status(400).json({ error: "No available slots for the selected date." });
     }
+
+    slot.slots -= 1;
+    await foundRestaurant.save();
 
     const newReservation = new reservation({
       user,
@@ -203,42 +218,73 @@ const updateReservation = async (req, res) => {
     }
     // console.log("Reservation found:", reservationToUpdate);
 
-    if (user) {
-      // console.log("Updating user:", user);
-      reservationToUpdate.user = user;
+  //   if (user) {
+  //     // console.log("Updating user:", user);
+  //     reservationToUpdate.user = user;
+  //   }
+
+  //   if (restaurantId) {
+  //     // console.log("Checking restaurant ID:", restaurantId);
+  //     const foundRestaurant = await restaurant.findById(restaurantId);
+  //     if (!foundRestaurant) {
+  //       // console.log("Restaurant not found with ID:", restaurantId);
+  //       return res.status(404).json({
+  //         error: `Restaurant not found. Invalid restaurant ID: ${restaurantId}`,
+  //       });
+  //     }
+  //     // console.log("Restaurant found:", foundRestaurant);
+  //     reservationToUpdate.restaurant = restaurantId;
+  //   }
+
+  //   if (date) {
+  //     // console.log("Updating date to:", date);
+  //     reservationToUpdate.date = date;
+  //   }
+
+  //   if (status) {
+  //     // console.log("Updating status to:", status);
+  //     reservationToUpdate.status = status;
+  //   }
+
+  //   // console.log("Final reservation object before saving:", reservationToUpdate);
+
+  //   const updatedReservation = await reservationToUpdate.save();
+  //   // console.log("Reservation successfully updated:", updatedReservation);
+
+  //   res.status(200).json(updatedReservation);
+  // } catch (error) {
+  //   // console.error("Error while updating reservation:", error);
+  //   res.status(500).json({ error: error.message });
+  // }
+  const foundRestaurant = await restaurant.findById(restaurantId);
+    if (!foundRestaurant) {
+      return res.status(404).json({ error: "Restaurant not found." });
     }
 
-    if (restaurantId) {
-      // console.log("Checking restaurant ID:", restaurantId);
-      const foundRestaurant = await restaurant.findById(restaurantId);
-      if (!foundRestaurant) {
-        // console.log("Restaurant not found with ID:", restaurantId);
-        return res.status(404).json({
-          error: `Restaurant not found. Invalid restaurant ID: ${restaurantId}`,
-        });
+    if (date && date !== reservationToUpdate.date.toISOString()) {
+      const oldSlot = foundRestaurant.reservationSlots.find(
+        (slot) => slot.date.toISOString() === reservationToUpdate.date.toISOString()
+      );
+      if (oldSlot) oldSlot.slots += 1;
+
+      const newSlot = foundRestaurant.reservationSlots.find(
+        (slot) => slot.date.toISOString() === new Date(date).toISOString() && slot.slots > 0
+      );
+
+      if (!newSlot) {
+        return res.status(400).json({ error: "No available slots for the new date." });
       }
-      // console.log("Restaurant found:", foundRestaurant);
-      reservationToUpdate.restaurant = restaurantId;
+
+      newSlot.slots -= 1;
+      await foundRestaurant.save();
     }
 
-    if (date) {
-      // console.log("Updating date to:", date);
-      reservationToUpdate.date = date;
-    }
-
-    if (status) {
-      // console.log("Updating status to:", status);
-      reservationToUpdate.status = status;
-    }
-
-    // console.log("Final reservation object before saving:", reservationToUpdate);
+    if (status) reservationToUpdate.status = status;
+    if (user) reservationToUpdate.user = user;
 
     const updatedReservation = await reservationToUpdate.save();
-    // console.log("Reservation successfully updated:", updatedReservation);
-
     res.status(200).json(updatedReservation);
   } catch (error) {
-    // console.error("Error while updating reservation:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -264,6 +310,29 @@ const deleteReservation = async (req, res) => {
       });
   } catch (error) {
     // console.error("Error deleting reservation:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const checkAvailableSlots = async (req, res) => {
+  try {
+    const { restaurantId, date } = req.params;
+
+    const foundRestaurant = await restaurant.findById(restaurantId);
+    if (!foundRestaurant) {
+      return res.status(404).json({ error: "Restaurant not found." });
+    }
+
+    const availableSlot = foundRestaurant.reservationSlots.find(
+      (slot) => slot.date.toISOString() === new Date(date).toISOString() && slot.slots > 0
+    );
+
+    if (!availableSlot) {
+      return res.status(404).json({ error: "No available slots on this date." });
+    }
+
+    res.status(200).json({ availableSlots: availableSlot.slots });
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
@@ -395,6 +464,7 @@ module.exports = {
   getReservations,
   addReservation,
   updateReservation,
+  checkAvailableSlots,
   deleteReservation,
   createPayment,
   capturePayment,
