@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const Admin = require("./admin")
 
 const restaurantSchema = mongoose.Schema(
   {
