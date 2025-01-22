@@ -61,9 +61,12 @@ PAYPAL_CLIENT_SECRET=your_paypal_client_secret
 
 2. **Restaurant Management Endpoints**
 
----- **GET /api/get-restaurant**s: Retrieve a list of all restaurants.
+---- **GET /api/get-restaurants**: Retrieve a list of all restaurants.
+---- **GET /get-restaurants/admin/:adminId**: Retrieve a list of restaurants associated with a specific admin.
+---- **GET /get-restaurants/:id**: Retrieve a restaurant associated with a specific Id.
 ---- **POST /api/add-restaurant**: Add a new restaurant (requires admin role).
 ---- **PUT /api/update-restaurant/:id**: Update restaurant details (requires admin role).
+---- **GET /get-restaurants/:restaurantId/slots/:date**: Checks the available slots for a specific restaurant on a specific date.
 ---- **DELETE /api/delete-restaurant/:id**: Delete a restaurant (requires admin role).
 
 

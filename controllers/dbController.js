@@ -5,6 +5,42 @@ const { client } = require("../config/paypal");
 const Payment = require("../models/paypalPayment");
 const Review = require('../models/review');
 const Restaurant = require("../models/restaurant");
+const User = require("../models/user");
+
+const getUsers = async (req, res) => {
+  try {
+    const users = await User.find();
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: "No users found." });
+    }
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Error fetching users:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    if (error.kind === "ObjectId") {
+      return res.status(400).json({ message: "Invalid user ID." });
+    }
+    console.error("Error fetching user by ID:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
 
 //////////////////////// RESTAURANT FUNCTIONS ////////////////////////
 
@@ -15,24 +51,70 @@ const getRestaurants = async (req, res) => {
     // console.log("Restaurants fetched successfully:", restaurants);
     res.json(restaurants);
   } catch (error) {
-    // console.error("Error fetching restaurants:", error.message);
+    console.error("Error fetching restaurants:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getRestaurantsByAdmin = async (req, res) => {
+  try {
+    const { adminId } = req.params;
+
+    const restaurants = await restaurant.find({ admin: adminId });
+
+    if (!restaurants || restaurants.length === 0) {
+      return res.status(404).json({ message: "No restaurants found for this admin." });
+    }
+
+    res.status(200).json(restaurants);
+  } catch (error) {
+    console.error("Error fetching restaurants by admin:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getRestaurantById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const restaurant = await Restaurant.findById(id).populate("admin");
+
+    if (!restaurant) {
+      return res.status(404).json({ message: "Restaurant not found." });
+    }
+
+    res.status(200).json(restaurant);
+  } catch (error) {
+    if (error.kind === "ObjectId") {
+      return res.status(400).json({ message: "Invalid restaurant ID." });
+    }
+    console.error("Error fetching restaurant by ID:", error.message);
     res.status(500).json({ error: error.message });
   }
 };
 
 const addRestaurant = async (req, res) => {
   try {
-    const { name, location, cuisine, description, reservationSlots, admin } =
-      req.body;
+    const { name, location, cuisine, description, reservationSlots, admin } = req.body;
     const image = req.file ? req.file.path : null;
 
-    // console.log("Received data to add restaurant:", req.body);
-
     if (!name || !location || !cuisine || !admin) {
-      // console.log("Validation error: Missing required fields");
-      return res
-        .status(400)
-        .json({ error: "Name, location, cuisine, and admin are required." });
+      return res.status(400).json({
+        error: "Name, location, cuisine, and admin are required."
+      });
+    }
+
+    // Check and parse reservationSlots
+    let parsedReservationSlots = [];
+    if (Array.isArray(reservationSlots)) {
+      parsedReservationSlots = reservationSlots.map(slot => {
+        if (slot.date && slot.slots) {
+          return {
+            date: new Date(slot.date),
+            slots: slot.slots
+          };
+        }
+      });
     }
 
     const newRestaurant = new restaurant({
@@ -40,18 +122,15 @@ const addRestaurant = async (req, res) => {
       location,
       cuisine,
       description,
-      reservationSlots,
+      reservationSlots: parsedReservationSlots,
       image,
       admin,
     });
 
-    // console.log("Creating new restaurant:", newRestaurant);
-
     const savedRestaurant = await newRestaurant.save();
-    // console.log("Restaurant saved successfully:", savedRestaurant);
     res.status(201).json(savedRestaurant);
   } catch (error) {
-    // console.error("Error adding restaurant:", error.message);
+    console.error("Error adding restaurant:", error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -87,7 +166,7 @@ const updateRestaurant = async (req, res) => {
     // console.log("Restaurant updated successfully:", updatedRestaurant);
     res.status(200).json(updatedRestaurant);
   } catch (error) {
-    // console.error("Error updating restaurant:", error.message);
+    console.error("Error updating restaurant:", error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -109,7 +188,7 @@ const deleteRestaurant = async (req, res) => {
       .status(200)
       .json({ message: "Restaurant deleted successfully", deletedRestaurant });
   } catch (error) {
-    // console.error("Error deleting restaurant:", error.message);
+    console.error("Error deleting restaurant:", error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -132,7 +211,7 @@ const getReservations = async (req, res) => {
     // console.log("Reservations fetched successfully:", reservations);
     res.status(200).json(reservations);
   } catch (error) {
-    // console.error("Error fetching reservations:", error.message);
+    console.error("Error fetching reservations:", error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -194,9 +273,10 @@ const addReservation = async (req, res) => {
 
     const savedReservation = await newReservation.save();
     // console.log("Reservation saved successfully:", savedReservation);
+
     res.status(201).json(savedReservation);
   } catch (error) {
-    // console.error("Error adding reservation:", error.message);
+    console.error("Error adding reservation:", error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -309,7 +389,7 @@ const deleteReservation = async (req, res) => {
         deletedReservation,
       });
   } catch (error) {
-    // console.error("Error deleting reservation:", error.message);
+    console.error("Error deleting reservation:", error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -323,8 +403,9 @@ const checkAvailableSlots = async (req, res) => {
       return res.status(404).json({ error: "Restaurant not found." });
     }
 
+    const formattedDate = new Date(date).setHours(0, 0, 0, 0);
     const availableSlot = foundRestaurant.reservationSlots.find(
-      (slot) => slot.date.toISOString() === new Date(date).toISOString() && slot.slots > 0
+      (slot) => new Date(slot.date).setHours(0, 0, 0, 0) === formattedDate && slot.slots > 0
     );
 
     if (!availableSlot) {
@@ -452,12 +533,16 @@ const addReview = async (req, res) => {
 
     res.status(201).json(newReview);
   } catch (error) {
-    res.status(500).json({ msg: 'Server error', error: error.message });
+    res.status(500).json({ msg: "Server error", error: error.message });
   }
 };
 
 module.exports = {
+  getUsers,
+  getUserById,
   getRestaurants,
+  getRestaurantsByAdmin,
+  getRestaurantById,
   addRestaurant,
   updateRestaurant,
   deleteRestaurant,

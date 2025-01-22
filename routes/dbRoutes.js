@@ -1,13 +1,17 @@
 const express = require("express");
 const {
+  getUsers,
+  getUserById,
   getRestaurants,
+  getRestaurantsByAdmin,
+  getRestaurantById,
   addRestaurant,
   updateRestaurant,
-  checkAvailableSlots,
   deleteRestaurant,
   getReservations,
   addReservation,
   updateReservation,
+  checkAvailableSlots,
   deleteReservation,
   createPayment,
   capturePayment,
@@ -25,8 +29,13 @@ const {
 const upload = require("../middleware/upload");
 const router = express.Router();
 
+router.get("/users", protect, adminOnly, getUsers);
+router.get("/users/:id", protect, getUserById);
+
 // RESTAURANT ROUTES
 router.get("/get-restaurants", getRestaurants);
+router.get("/get-restaurants/admin/:adminId", getRestaurantsByAdmin);
+router.get("/get-restaurants/:id", getRestaurantById);
 router.post(
   "/add-restaurant",
   protect,
@@ -43,7 +52,7 @@ router.put(
   upload.single("image"),
   updateRestaurant
 );
-router.get("/restaurants/:restaurantId/slots/:date", checkAvailableSlots);
+router.get("/get-restaurants/:restaurantId/slots/:date", protect, checkAvailableSlots);
 router.delete("/delete-restaurant/:id", protect, adminOnly, deleteRestaurant);
 
 // RESERVATION ROUTES

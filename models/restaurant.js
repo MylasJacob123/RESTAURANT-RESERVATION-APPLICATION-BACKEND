@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const Admin = require("./admin")
 
 const restaurantSchema = mongoose.Schema(
   {
@@ -15,7 +14,7 @@ const restaurantSchema = mongoose.Schema(
     ],
     admin: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "admin",
+      ref: "user",
       required: true,
     },
     image: { type: String },
